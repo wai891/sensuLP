@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>株式会社 橘一 | お誂え扇子 特別受注</title>
+    
+    <!-- Tailwind CSS (デザイン用) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel (プログラム動作回用) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap');
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        }
+        .font-serif {
+            font-family: 'Noto Serif JP', serif;
+        }
+        /* ふわりと表示するアニメーション */
+        .fade-in {
+            animation: fadeIn 1.2s ease-in forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-[#fcfaf7]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 画像表示を確実にするためのコンポーネント ---
+        // 指定された画像が見つからない場合、予備のファイル名を順に試します
+        const ImageWithFallback = ({ src, alt, className, fallbacks = [] }) => {
+            const [currentSrc, setCurrentSrc] = useState(src);
+            const [attempt, setAttempt] = useState(0);
+            const [hasError, setHasError] = useState(false);
+
+            const handleError = () => {
+                if (attempt < fallbacks.length) {
+                    // 次の候補を試す
+                    console.log(`Image load failed: ${currentSrc}. Trying fallback: ${fallbacks[attempt]}`);
+                    setCurrentSrc(fallbacks[attempt]);
+                    setAttempt(prev => prev + 1);
+                } else {
+                    // 全て失敗した場合
+                    console.log(`All image attempts failed for ${alt}`);
+                    setHasError(true);
+                }
+            };
+
+            if (hasError) {
+                // 画像がない場合のプレースホルダー
+                return (
+                    <div className={`bg-gray-200 flex items-center justify-center text-gray-400 text-xs p-2 text-center border border-gray-300 ${className}`} style={{minHeight: "100px"}}>
+                        <div className="space-y-1">
+                            <span>画像が見つかりません</span><br/>
+                            <span className="text-[10px] opacity-70">{alt}</span>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <img 
+                    src={currentSrc} 
+                    alt={alt} 
+                    className={className} 
+                    onError={handleError} 
+                />
+            );
+        };
+
+        // --- アイコンコンポーネント (Lucide Icons) ---
+        const ShoppingBag = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        );
+        const ChevronRight = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+        );
+        const AlertTriangle = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        );
+        const Clock = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        );
+        const Scissors = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        );
+        const Check = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
+        );
+        const Star = ({size=24, className="", fill="none"}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        );
+        const Mail = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        );
+        const Package = ({size=24, className=""}) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        );
+
+        // --- メインコンポーネント ---
+        const SensuLP = () => {
+            const [orderComplete, setOrderComplete] = useState(false);
+            const [agreedToTerms, setAgreedToTerms] = useState(false);
+            const [fabricConfirmed, setFabricConfirmed] = useState(false);
+            
+            // フォーム状態
+            const [formData, setFormData] = useState({
+                name: '',
+                email: '',
+                address: '',
+                phone: '',
+                message: ''
+            });
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (agreedToTerms && fabricConfirmed) {
+                    setOrderComplete(true);
+                    // 完了画面へスクロール
+                    setTimeout(() => {
+                        const element = document.getElementById('order-section');
+                        element?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            };
+
+            const productPrice = 14300;
+
+            return (
+                <div className="min-h-screen text-gray-800 font-sans">
+                {/* Header */}
+                <header className="fixed w-full bg-white/95 backdrop-blur-sm shadow-sm z-50 border-b border-gray-100">
+                    <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-xl font-serif font-bold tracking-widest text-gray-900">株式会社 橘一</h1>
+                        <p className="text-[10px] text-gray-500 tracking-wide">TACHIICHI Co.Ltd.</p>
+                    </div>
+                    <button 
+                        onClick={() => {
+                        const element = document.getElementById('order-section');
+                        element?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="bg-[#5D4037] text-white px-5 py-2 rounded shadow-md hover:bg-[#3e2b24] transition-colors flex items-center gap-2 text-sm"
+                    >
+                        <ShoppingBag size={16} />
+                        <span>お誂えを依頼する</span>
+                    </button>
+                    </div>
+                </header>
+
+                {/* Hero Section */}
+                <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+                    <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                    <div className="order-2 md:order-1 space-y-6 fade-in">
+                        <div className="flex gap-2">
+                             <span className="inline-block px-3 py-1 bg-[#5D4037] text-white text-xs tracking-widest font-bold">公式HP先行受付</span>
+                             <span className="inline-block px-3 py-1 border border-[#5D4037] text-[#5D4037] text-xs tracking-widest">Web限定企画</span>
+                        </div>
+                        
+                        <h2 className="text-4xl md:text-5xl font-serif font-medium leading-tight text-gray-900">
+                        大切な思い出の生地が、<br/>
+                        <span className="text-[#5D4037]">一生モノの扇子</span>に<br/>
+                        生まれ変わる。
+                        </h2>
+                        <p className="text-lg text-gray-600 leading-relaxed">
+                        お手持ちの着物地や思い出の布を、熟練職人が一本一本仕立てます。<br/>
+                        一般販売に先駆け、自社HPにて「お誂え」の受付を開始いたしました。
+                        </p>
+                        <div className="pt-4 border-t border-gray-200 mt-6 w-max">
+                            <p className="text-sm text-gray-500 mb-1">お誂え価格</p>
+                            <p className="text-3xl font-serif text-[#5D4037]">14,300円<span className="text-sm text-gray-500 ml-2">（税込）</span></p>
+                        </div>
+                    </div>
+                    <div className="order-1 md:order-2 relative fade-in">
+                        {/* 扇子が欠けないよう object-contain に変更し、背景を白に */}
+                        <div className="aspect-[4/3] rounded-sm overflow-hidden shadow-2xl bg-white border-4 border-white">
+                        <ImageWithFallback 
+                            src="7扇子.jpg" 
+                            alt="完成した扇子" 
+                            className="w-full h-full object-contain transform hover:scale-105 transition-duration-700 transition-transform"
+                            fallbacks={["6扇子.jpg", "8扇子.jpg"]}
+                        />
+                        </div>
+                        <div className="absolute -bottom-6 -left-6 bg-white p-4 shadow-lg rounded-sm max-w-xs hidden md:block border border-gray-100">
+                        <p className="font-serif text-sm text-gray-600">「大切な思い出の生地が、夏を彩る逸品になりました」</p>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Concept & Artisan */}
+                <section id="about-artisan" className="py-20 bg-white">
+                    <div className="max-w-4xl mx-auto px-4">
+                    <div className="text-center mb-16">
+                        <p className="text-[#5D4037] text-sm font-bold tracking-widest mb-2">職人の物語</p>
+                        <h2 className="text-3xl font-serif mb-6">すべての工程を、<br/>一人の熟練職人が手がける理由。</h2>
+                        <p className="text-gray-600 leading-loose text-justify md:text-center max-w-2xl mx-auto">
+                            通常、扇子作りは多くの工程を分業で行います。<br/>
+                            しかし、本企画で製作を担うのは、ほぼ全ての工程をご自身お一人で完結させる熟練の職人です。<br/><br/>
+                            
+                            お客様からお預かりする生地は、厚みも、質感も、一つとして同じものはありません。<br/>
+                            <strong>「様々な生地にあわせ、手の感触と経験で最高の品に仕上げる」</strong>。<br/>
+                            微細な調整を重ねるこの手仕事こそが、他にはない美しさを生み出します。<br/>
+                            そのため、完成までにお時間をいただきますが、待つだけの価値がある逸品をお届けします。
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-16">
+                        {/* 作業風景フォトギャラリー（新規画像反映） */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-lg overflow-hidden shadow-lg h-64 md:h-80 bg-gray-200 relative">
+                                {/* メイン画像：手元のアップ - 2026...ファイル名指定 */}
+                                <ImageWithFallback
+                                    src="Photos-3-001 (6).zip/20260106_130744839.JPG"
+                                    alt="職人の手元"
+                                    className="w-full h-full object-cover hover:scale-105 transition duration-700"
+                                    fallbacks={["20260106_130744839.JPG", "扇　作業風景.jpg.jpg"]}
+                                />
+                            </div>
+                            <div className="grid grid-rows-2 gap-4 h-64 md:h-80">
+                                <div className="rounded-lg overflow-hidden shadow-lg bg-gray-200 relative">
+                                    {/* サブ画像1：道具と素材 - 2026...ファイル名指定 */}
+                                    <ImageWithFallback
+                                        src="Photos-3-001 (6).zip/20260106_130600409.JPG"
+                                        alt="道具と素材"
+                                        className="w-full h-full object-cover hover:scale-105 transition duration-700"
+                                        fallbacks={["20260106_130600409.JPG", "扇の作成工具.jpg.jpg"]}
+                                    />
+                                </div>
+                                <div className="rounded-lg overflow-hidden shadow-lg bg-gray-200 relative">
+                                    {/* サブ画像2：製作風景 - 2026...ファイル名指定 */}
+                                    <ImageWithFallback
+                                        src="Photos-3-001 (6).zip/20260106_130623711.JPG"
+                                        alt="製作風景"
+                                        className="w-full h-full object-cover hover:scale-105 transition duration-700"
+                                        fallbacks={["20260106_130623711.JPG", "扇　作業風景.jpg.jpg"]}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-center text-xs text-gray-400 -mt-8">
+                            ※職人の意向により、お顔は伏せさせていただいております。
+                        </div>
+
+                        <div className="bg-[#fcfaf7] p-8 rounded-xl border border-[#e5e7eb] flex flex-col md:flex-row gap-6 items-start">
+                            <div className="bg-[#5D4037] p-4 rounded-full text-white shrink-0">
+                                <Scissors size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-3">「私たちが作った扇子」であれば、<br/>お困りごとを解決することができるかもしれません。</h3>
+                                <p className="text-gray-600 leading-relaxed mb-4">
+                                    近年増えている安価な海外製品の多くは、分業で作られたもので、壊れたら修理できないことがほとんどです。<br/>
+                                    しかし、私たちは違います。<br/>
+                                    <br/>
+                                    すべての工程を一人の熟練職人が責任を持って手がけているからこそ、構造の隅々まで把握しており、万が一の故障にも的確な修理・メンテナンスを行うことができます。<br/>
+                                    思い出の生地で作る世界に一つの扇子。だからこそ、使い捨てではなく、長く愛用していただきたい。<br/>
+                                    「直せる」という安心感もご一緒にお届けします。
+                                </p>
+                                <p className="text-xs text-gray-500">※修理代金は別途お見積りとなります。</p>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Product Details */}
+                <section className="py-20 bg-[#f8f5f2]">
+                    <div className="max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-serif mb-4">商品詳細・セット内容</h2>
+                        <p className="text-gray-600">お客様の生地が、扇子と扇子袋のセットになります。</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Item 1 */}
+                        <div className="bg-white rounded overflow-hidden shadow-md group">
+                            <div className="aspect-square overflow-hidden bg-white">
+                                <ImageWithFallback
+                                    src="6扇子.jpg" 
+                                    alt="扇子本体"
+                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                    fallbacks={["7扇子.jpg", "8扇子.jpg"]}
+                                />
+                            </div>
+                            <div className="p-6">
+                                <h3 className="font-bold text-lg mb-2 text-[#5D4037]">1. 扇子本体</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                熟練の技で折り加工を施します。骨は落ち着いた茶色の染め骨を使用し、どんな生地にも上品に馴染みます。
+                                </p>
+                            </div>
+                        </div>
+                        {/* Item 2 */}
+                        <div className="bg-white rounded overflow-hidden shadow-md group">
+                            <div className="aspect-square overflow-hidden bg-white">
+                                <ImageWithFallback
+                                    src="6扇子袋.jpg"
+                                    alt="共布の扇子袋"
+                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                    fallbacks={["7扇子袋.jpg", "8扇子袋.jpg"]}
+                                />
+                            </div>
+                            <div className="p-6">
+                                <h3 className="font-bold text-lg mb-2 text-[#5D4037]">2. 共布の扇子袋</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                扇子と同じ生地で、携帯に便利な専用袋をお作りします。バッグの中でも扇子を保護します。
+                                </p>
+                            </div>
+                        </div>
+                        {/* Item 3 */}
+                        <div className="bg-white rounded overflow-hidden shadow-md group">
+                            <div className="aspect-square overflow-hidden bg-white">
+                                <ImageWithFallback
+                                    src="箱サンプル.jpg"
+                                    alt="贈答用箱"
+                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                    fallbacks={["箱　サンプル1.jpg", "箱　サンプル1.JPG", "箱サンプル.JPG", "6扇子箱入り.jpg"]}
+                                />
+                            </div>
+                            <div className="p-6">
+                                <h3 className="font-bold text-lg mb-2 text-[#5D4037]">3. ギフトボックス・金具</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                専用の箱にお入れしてお届けします。扇の持ち手には房を付けられる金具が付いておりますので、後からお好みの房を付けることも可能です。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 bg-white p-6 rounded-sm border-l-4 border-[#5D4037] shadow-sm flex flex-col md:flex-row gap-6 items-center">
+                        <div className="flex-1">
+                        <h4 className="font-bold text-lg text-[#5D4037] mb-3">仕様について</h4>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm">
+                            <li><strong>扇子の骨：</strong>深みと気品のある、唐木（からき）色の染め骨を使用。</li>
+                            <li><strong>デザイン：</strong>生地のどの部分を使用するかは、<span className="bg-gray-100 px-1 font-bold">職人のおまかせ</span>となります。</li>
+                            <li><strong>サイズ：</strong>縦5.9寸（約22.5cm）</li>
+                        </ul>
+                        </div>
+                        <div className="w-full md:w-1/3 bg-white p-2">
+                            <ImageWithFallback
+                                src="7扇子箱入り.jpg"
+                                alt="セット全体像"
+                                className="w-full h-40 object-contain rounded-sm border border-gray-100"
+                                fallbacks={["6扇子箱入り.jpg", "箱サンプル.jpg"]}
+                            />
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Case Study Section */}
+                <section className="py-20 bg-white border-b border-gray-100">
+                    <div className="max-w-6xl mx-auto px-4">
+                        <div className="text-center mb-16">
+                            <span className="text-[#5D4037] text-xs font-bold tracking-widest block mb-2">CASE STUDY</span>
+                            <h2 className="text-3xl font-serif mb-4">製作事例</h2>
+                            <p className="text-gray-500 text-sm">一枚の布が、職人の手で扇子に生まれ変わるまで。</p>
+                        </div>
+
+                        <div className="bg-[#fcfaf7] border border-gray-200 rounded-lg p-8 md:p-12 shadow-sm">
+                            <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+                                {/* Before: Fabric */}
+                                <div className="w-full md:w-1/3 text-center">
+                                    <div className="relative mb-4 group">
+                                        <div className="aspect-square bg-white p-2 shadow-md rotate-[-2deg] transition-transform group-hover:rotate-0">
+                                            {/* ファイル名修正: 2025...JPGを優先 (ユーザー指定) */}
+                                            <ImageWithFallback
+                                                src="20251208_095035871.JPG"
+                                                alt="お預かりした生地"
+                                                className="w-full h-full object-contain"
+                                                fallbacks={["Photos-3-001 (4).zip/20251208_095035871.JPG", "8扇子生地.jpg"]}
+                                            />
+                                        </div>
+                                        <span className="absolute -top-3 -left-3 bg-gray-600 text-white text-xs px-3 py-1 font-bold shadow-sm">Before</span>
+                                    </div>
+                                    <h4 className="font-bold text-gray-800 mb-2">お預かりした生地</h4>
+                                    <p className="text-xs text-gray-500 leading-relaxed">
+                                        可愛らしい小鳥の柄があしらわれた、<br/>お客様愛用の綿生地です。
+                                    </p>
+                                </div>
+
+                                {/* Arrow Icon */}
+                                <div className="text-[#5D4037] opacity-50 rotate-90 md:rotate-0">
+                                    <ChevronRight size={32} />
+                                </div>
+
+                                {/* After: Fan & Bag */}
+                                <div className="w-full md:w-1/2">
+                                    <div className="relative mb-4 group">
+                                        <div className="bg-white p-2 shadow-xl">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="aspect-[4/3] overflow-hidden">
+                                                    {/* ファイル名修正: 2025...JPGを優先 */}
+                                                    <ImageWithFallback
+                                                        src="20251208_095121705.JPG"
+                                                        alt="完成した扇子"
+                                                        className="w-full h-full object-contain transform transition-transform duration-700 group-hover:scale-105"
+                                                        fallbacks={["Photos-3-001 (4).zip/20251208_095121705.JPG", "8扇子.jpg"]}
+                                                    />
+                                                </div>
+                                                <div className="aspect-[4/3] overflow-hidden">
+                                                    {/* ファイル名修正: 2025...JPGを優先 */}
+                                                    <ImageWithFallback
+                                                        src="20251208_095208823.JPG"
+                                                        alt="共布の扇子袋"
+                                                        className="w-full h-full object-contain transform transition-transform duration-700 group-hover:scale-105"
+                                                        fallbacks={["Photos-3-001 (4).zip/20251208_095208823.JPG", "8扇子袋.jpg"]}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span className="absolute -top-3 -right-3 bg-[#5D4037] text-white text-xs px-3 py-1 font-bold shadow-sm">After</span>
+                                    </div>
+                                    <div className="text-center md:text-left pl-2">
+                                        <h4 className="font-bold text-xl text-[#5D4037] mb-2 font-serif">小鳥たちが遊ぶ、涼やかな一本に。</h4>
+                                        <p className="text-sm text-gray-600 leading-loose">
+                                            扇面を開いた瞬間に小鳥たちが飛び回るよう、職人が柄の位置を計算して裁断しました。<br/>
+                                            お揃いの扇子袋に入れると、まるで止まり木で休んでいるかのような愛らしさ。<br/>
+                                            骨の色味も生地の雰囲気に合わせ、上品に仕上げています。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Customer Voices (New) */}
+                <section className="py-20 bg-[#fcfaf7]">
+                    <div className="max-w-5xl mx-auto px-4">
+                        <div className="text-center mb-12">
+                            <span className="text-[#5D4037] text-xs font-bold tracking-widest block mb-2">VOICE</span>
+                            <h2 className="text-3xl font-serif">お客様の声</h2>
+                            <p className="text-gray-500 text-sm mt-4">先行モニターに参加された方々のご感想です。</p>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-8">
+                            {/* Voice 1 */}
+                            <div className="bg-white p-8 rounded border border-gray-100 shadow-sm relative">
+                                <div className="absolute top-6 right-6 text-[#5D4037] opacity-20">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z"/></svg>
+                                </div>
+                                <div className="flex text-yellow-500 mb-4">
+                                    <Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" />
+                                </div>
+                                <h3 className="font-bold text-gray-800 mb-3">「祖母の着物が、夏を彩る品に」</h3>
+                                <p className="text-gray-600 text-sm leading-loose">
+                                    形見分けでもらった着物でしたが、着る機会がなく箪笥の肥やしになっていました。扇子なら夏場に鞄に入れて持ち歩けるし、何より柄の出し方が絶妙で、祖母を近くに感じられます。職人さんにお任せして本当によかったです。
+                                </p>
+                                <p className="text-xs text-gray-400 mt-4 border-t border-gray-200 pt-2">東京都 / 50代 女性</p>
+                            </div>
+                            {/* Voice 2 */}
+                            <div className="bg-white p-8 rounded border border-gray-100 shadow-sm relative">
+                                <div className="absolute top-6 right-6 text-[#5D4037] opacity-20">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z"/></svg>
+                                </div>
+                                <div className="flex text-yellow-500 mb-4">
+                                    <Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" />
+                                </div>
+                                <h3 className="font-bold text-gray-800 mb-3">「丁寧な仕事に感動」</h3>
+                                <p className="text-gray-600 text-sm leading-loose">
+                                    自分で染めた手ぬぐいを使ってお願いしました。市販の扇子とは開閉の滑らかさが段違いです。房をつける金具がついているのも嬉しいポイントでした。時間はかかりましたが、待つ価値のある逸品です。
+                                </p>
+                                <p className="text-xs text-gray-400 mt-4 border-t border-gray-200 pt-2">京都府 / 40代 男性</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Requirements Section (Warning) */}
+                <section className="py-20 bg-white border-t border-gray-100">
+                    <div className="max-w-4xl mx-auto px-4">
+                    <h2 className="text-2xl font-bold text-center mb-10 flex items-center justify-center gap-2">
+                        <AlertTriangle className="text-red-600" />
+                        <span>必ずご確認ください：生地について</span>
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 gap-8 mb-10">
+                        <div className="bg-white p-6 rounded-lg border-t-4 border-blue-600 shadow-sm border border-gray-100">
+                        <h3 className="font-bold text-blue-800 mb-4 flex items-center gap-2">
+                            <div className="bg-blue-100 p-1 rounded-full"><Check size={16} className="text-blue-600"/></div>
+                            ご用意いただく生地
+                        </h3>
+                        <ul className="space-y-3 text-gray-700 text-sm">
+                            <li className="flex items-start gap-2">
+                            <span className="font-bold min-w-[60px]">サイズ：</span>
+                            <span>縦 25cm × 横 100cm 以上</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                            <span className="font-bold min-w-[60px]">素材：</span>
+                            <span>綿、麻、薄手の絹など</span>
+                            </li>
+                        </ul>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-lg border-t-4 border-red-600 shadow-sm border border-gray-100">
+                        <h3 className="font-bold text-red-800 mb-4 flex items-center gap-2">
+                            <div className="bg-red-100 p-1 rounded-full"><AlertTriangle size={16} className="text-red-600"/></div>
+                            お受けできない生地
+                        </h3>
+                        <ul className="space-y-2 text-gray-700 text-sm">
+                            <li className="flex items-center gap-2">❌ 黒い生地（墨色含む）</li>
+                            <li className="flex items-center gap-2">❌ 厚手の生地（帯地、デニム等）</li>
+                            <li className="flex items-center gap-2">❌ 化学繊維（ポリエステル、レーヨン等）</li>
+                            <li className="flex items-center gap-2">❌ 濃い地色で撥水加工済みのもの（糊斑が出るため）</li>
+                            <li className="flex items-center gap-2">❌ ニットなど伸縮性のある生地</li>
+                        </ul>
+                        </div>
+                    </div>
+
+                    <div className="bg-yellow-50 p-6 rounded-md flex items-start gap-4 border border-yellow-200">
+                        <Clock className="text-yellow-700 shrink-0 mt-1" />
+                        <div>
+                        <h4 className="font-bold text-yellow-800 mb-1">納期について</h4>
+                        <p className="text-sm text-yellow-900 leading-relaxed">
+                            現在、職人が手作業で製作を行っているため、生地到着から完成まで<span className="font-bold text-red-600 underline">約2ヶ月</span>のお時間を頂戴しております。お急ぎのご対応は致しかねますので、予めご了承ください。
+                        </p>
+                        </div>
+                    </div>
+
+                    {/* 追加：加工不可時の対応・汚れについて */}
+                    <div className="mt-6 bg-gray-50 p-6 rounded-md border border-gray-200 text-sm text-gray-600">
+                        <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <span className="bg-gray-600 text-white text-xs px-2 py-0.5 rounded">重要</span>
+                            その他のご注意事項
+                        </h4>
+                        <ul className="list-disc list-inside space-y-2">
+                            <li>
+                                <span className="font-bold">生地の返却について：</span><br/>
+                                お送りいただいた生地を職人が検品し、「加工不可」と判断した場合（糊が乗らない、強度が足りない等）、
+                                大変恐縮ですが<span className="font-bold underline text-red-600">着払い（お客様ご負担）にて生地をご返送</span>させていただきます。
+                                事前に生地の条件をよくご確認ください。
+                            </li>
+                            <li>
+                                <span className="font-bold">生地の汚れ・傷について：</span><br/>
+                                古布や着物地の場合、元々の汚れや折り目がある場合がございます。
+                                職人が可能な限り避けて裁断いたしますが、生地の用尺や柄の配置により、やむを得ず入ってしまう場合は
+                                <span className="font-bold">「思い出の証・味わい」としてそのまま使用させていただきます。</span>
+                                汚れ等を理由とした返品・再製作はお受けできませんのでご了承ください。
+                            </li>
+                        </ul>
+                    </div>
+
+                    </div>
+                </section>
+
+                {/* Flow & Order Section */}
+                <section id="order-section" className="py-20 bg-white">
+                    <div className="max-w-3xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-serif mb-6">ご注文の流れ</h2>
+                        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm font-bold text-gray-600 mb-10">
+                            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg w-full">
+                                <div className="w-8 h-8 rounded-full bg-[#5D4037] text-white flex items-center justify-center mb-2">1</div>
+                                ウェブから注文
+                            </div>
+                            <ChevronRight className="hidden md:block text-gray-400" />
+                            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg w-full">
+                                <div className="w-8 h-8 rounded-full bg-[#5D4037] text-white flex items-center justify-center mb-2">2</div>
+                                生地を弊社へ郵送
+                            </div>
+                            <ChevronRight className="hidden md:block text-gray-400" />
+                            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg w-full">
+                                <div className="w-8 h-8 rounded-full bg-[#5D4037] text-white flex items-center justify-center mb-2">3</div>
+                                製作（約2ヶ月）
+                                <br/><span className="text-[10px] text-gray-500 font-normal">※完成時にメールでご連絡後発送</span>
+                            </div>
+                        </div>
+
+                        {/* 詳細フロー (Deep Dive) */}
+                        <div className="space-y-12 text-left bg-[#fcfaf7] p-8 md:p-12 rounded-lg border border-gray-200">
+                            {/* Step 1 Detail */}
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="md:w-1/4">
+                                    <span className="text-4xl font-serif text-[#ebd5c1] font-bold">01</span>
+                                    <h4 className="text-lg font-bold text-[#5D4037] mt-1">ウェブからお申し込み</h4>
+                                </div>
+                                <div className="md:w-3/4 border-l-2 border-[#ebd5c1] pl-6 pb-2">
+                                    <p className="text-gray-600 text-sm leading-relaxed">
+                                        本ページ下部の申し込みフォームより、必要事項をご記入の上送信してください。<br/>
+                                        すぐに自動返信メールにて、<strong>【生地の送付先住所】</strong>と<strong>【今後の手順】</strong>をご案内いたします。<br/>
+                                        <span className="text-xs text-gray-400">※この段階ではまだ決済は確定しておりません。</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Step 2 Detail */}
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="md:w-1/4">
+                                    <span className="text-4xl font-serif text-[#ebd5c1] font-bold">02</span>
+                                    <h4 className="text-lg font-bold text-[#5D4037] mt-1">生地のご送付</h4>
+                                </div>
+                                <div className="md:w-3/4 border-l-2 border-[#ebd5c1] pl-6 pb-2">
+                                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                                        お手持ちの生地（縦25cm×横1m以上）を、自動返信メールに記載された住所へお送りください。<br/>
+                                        <span className="text-xs bg-gray-200 px-1 py-0.5 rounded">重要</span> <span className="text-xs">送料はお客様ご負担（元払い）でお願いいたします。</span>
+                                    </p>
+                                    <div className="bg-white p-3 rounded border border-gray-200 text-xs text-gray-600 flex gap-2 items-start">
+                                        <Package size={16} className="shrink-0 text-[#5D4037] mt-0.5"/>
+                                        <div>
+                                            <span className="font-bold">梱包についてのお願い：</span><br/>
+                                            雨濡れ防止のため、生地を一度<strong>ビニール袋に入れてから</strong>封筒や箱に入れて発送してください。
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Step 3 Detail */}
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="md:w-1/4">
+                                    <span className="text-4xl font-serif text-[#ebd5c1] font-bold">03</span>
+                                    <h4 className="text-lg font-bold text-[#5D4037] mt-1">製作・お届け</h4>
+                                </div>
+                                <div className="md:w-3/4 border-l-2 border-[#ebd5c1] pl-6 pb-2">
+                                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                                        生地が到着次第、職人が検品を行います。問題がなければ製作を開始いたします。<br/>
+                                        約2ヶ月後、完成しましたら<strong>「完成お知らせメール」</strong>をお送りし、発送させていただきます。
+                                    </p>
+                                    <ul className="text-xs text-gray-500 list-disc list-inside space-y-1">
+                                        <li>完成品の送料は弊社が負担いたします。</li>
+                                        <li>検品で「加工不可」となった場合は、着払いにて返送させていただきます。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {!orderComplete ? (
+                        <div className="bg-white border-2 border-[#5D4037] rounded-sm p-6 md:p-10 shadow-xl mt-12">
+                        <div className="text-center mb-8">
+                            <span className="bg-[#5D4037] text-white text-xs px-2 py-1 mb-2 inline-block">WEB限定</span>
+                            <h3 className="text-2xl font-serif">お誂え 申し込みフォーム</h3>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            
+                            {/* Product Summary */}
+                            <div className="bg-[#fcfaf7] p-6 border border-gray-200 mb-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <p className="font-bold text-gray-800">お誂え扇子（扇子袋・箱付き）</p>
+                                <div className="text-xl font-bold text-[#5D4037]">
+                                    {productPrice.toLocaleString()}円
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500">※生地は別途ご郵送ください（送料はお客様負担となります）</p>
+                            <p className="text-xs text-gray-500">※完成品の送料は弊社が負担いたします</p>
+                            </div>
+
+                            {/* Form Fields */}
+                            <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">お名前 <span className="text-red-500">*</span></label>
+                                <input type="text" name="name" required className="w-full bg-gray-50 border border-gray-300 rounded p-3 focus:outline-none focus:border-[#5D4037]" onChange={handleInputChange} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">お電話番号 <span className="text-red-500">*</span></label>
+                                <input type="tel" name="phone" required className="w-full bg-gray-50 border border-gray-300 rounded p-3 focus:outline-none focus:border-[#5D4037]" onChange={handleInputChange} />
+                            </div>
+                            </div>
+
+                            <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">メールアドレス <span className="text-red-500">*</span></label>
+                            <input type="email" name="email" required className="w-full bg-gray-50 border border-gray-300 rounded p-3 focus:outline-none focus:border-[#5D4037]" onChange={handleInputChange} />
+                            </div>
+
+                            <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">ご住所（生地送付先・納品先） <span className="text-red-500">*</span></label>
+                            <textarea name="address" required rows="3" className="w-full bg-gray-50 border border-gray-300 rounded p-3 focus:outline-none focus:border-[#5D4037]" onChange={handleInputChange}></textarea>
+                            </div>
+
+                            <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">備考欄</label>
+                            <textarea name="message" rows="2" className="w-full bg-gray-50 border border-gray-300 rounded p-3 focus:outline-none focus:border-[#5D4037]" placeholder="ご質問などあればご記入ください" onChange={handleInputChange}></textarea>
+                            </div>
+
+                            {/* Confirmations */}
+                            <div className="space-y-4 pt-6 border-t border-gray-200">
+                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded">
+                                <input 
+                                type="checkbox" 
+                                id="check-fabric" 
+                                className="mt-1 w-5 h-5 text-[#5D4037] focus:ring-[#5D4037] cursor-pointer"
+                                checked={fabricConfirmed}
+                                onChange={(e) => setFabricConfirmed(e.target.checked)}
+                                />
+                                <label htmlFor="check-fabric" className="text-sm cursor-pointer select-none">
+                                <span className="font-bold text-gray-800">生地の条件を確認しました</span><br/>
+                                <span className="text-xs text-gray-500">
+                                    （黒い生地、厚手、ポリ、撥水加工は不可。<span className="text-red-600 font-bold">加工不可時は着払いで返送されることに同意します</span>）
+                                </span>
+                                </label>
+                            </div>
+
+                            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded">
+                                <input 
+                                type="checkbox" 
+                                id="check-terms" 
+                                className="mt-1 w-5 h-5 text-[#5D4037] focus:ring-[#5D4037] cursor-pointer"
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                />
+                                <label htmlFor="check-terms" className="text-sm cursor-pointer select-none">
+                                <span className="font-bold text-gray-800">注意事項に同意します</span><br/>
+                                <span className="text-xs text-gray-500">
+                                    （柄出し・汚れの混入等は職人お任せ / 納期約2ヶ月 / キャンセル不可）
+                                </span>
+                                </label>
+                            </div>
+                            </div>
+
+                            <button 
+                            type="submit" 
+                            disabled={!agreedToTerms || !fabricConfirmed}
+                            className={`w-full py-4 rounded font-bold text-lg shadow-lg transition-all ${
+                                agreedToTerms && fabricConfirmed 
+                                ? 'bg-[#5D4037] text-white hover:bg-[#3e2b24] transform hover:-translate-y-1' 
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                            >
+                            注文を確定する
+                            </button>
+                            <p className="text-center text-xs text-gray-400 mt-2">
+                                送信後、自動返信メールにて生地の送付先をご案内します。
+                            </p>
+                        </form>
+                        </div>
+                    ) : (
+                        <div className="bg-white border border-green-200 rounded-lg p-12 text-center shadow-lg fade-in">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Check size={40} className="text-green-600" />
+                        </div>
+                        <h3 className="text-2xl font-serif mb-4 text-[#5D4037]">ご注文ありがとうございます</h3>
+                        <p className="text-gray-600 mb-8 leading-relaxed">
+                            ご入力いただいたメールアドレスへ<br/>
+                            <strong>【生地送付先のご案内】</strong>をお送りしました。<br/><br/>
+                            
+                            本企画は、将来的な一般販売に向けた<br/>
+                            大切なテスト販売（モニター受注）となります。<br/>
+                            完成後、簡単なアンケートをお願いする場合がございますが、<br/>
+                            ご協力いただけますと幸いです。<br/>
+                            <br/>
+                            熟練職人が心を込めて、あなたの生地を扇子に仕立てます。<br/>
+                            出来上がり時にメールにてご案内申し上げますので、<br/>
+                            完成まで、どうぞ楽しみにお待ちください。
+                        </p>
+                        <button 
+                            onClick={() => setOrderComplete(false)}
+                            className="text-[#5D4037] underline hover:text-[#3e2b24]"
+                        >
+                            トップページへ戻る
+                        </button>
+                        </div>
+                    )}
+                    </div>
+                </section>
+
+                {/* Footer */}
+                <footer className="bg-[#2c241b] text-white/80 py-12">
+                    <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h2 className="text-xl font-serif font-bold text-white mb-4">株式会社 橘一</h2>
+                        <p className="text-sm leading-relaxed mb-4">
+                        日本の伝統を、今の暮らしに。<br/>
+                        お客様の大切な思い出を、職人の技で形にします。
+                        </p>
+                        <div className="flex items-center gap-2 text-sm mt-4">
+                        <Mail size={16} />
+                        <span>contact@tachibana-ichi.co.jp</span>
+                        </div>
+                    </div>
+                    <div className="md:text-right text-sm">
+                        <p>© 2025 Tachibana Ichi Co., Ltd. All Rights Reserved.</p>
+                        <div className="mt-4 flex md:justify-end gap-4">
+                        <a href="#" className="hover:text-white">特定商取引法に基づく表記</a>
+                        <a href="#" className="hover:text-white">プライバシーポリシー</a>
+                        </div>
+                    </div>
+                    </div>
+                </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SensuLP />);
+    </script>
+</body>
+</html>
