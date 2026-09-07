@@ -6,6 +6,17 @@
 
 - `index.html` … LP 本体（単一ファイル完結）
 - 公開範囲 … **public**（GitHub 上で誰でも閲覧できます）
+- 本番URL … https://wai891.github.io/sensuLP/
+
+### ⚠️ `main` への push は、そのまま本番公開です
+
+GitHub Pages が **`main` ブランチのルート** から自動デプロイする設定になっています。
+`main` に push した内容は、確認画面をはさまずに本番サイトへ反映されます。
+
+- 変更は必ず `claude/...` ブランチで行い、`main` へ直接 push しない
+- `main` への反映は、内容を確認したうえで Pull Request 経由で行う
+- リポジトリを private にすると Pages が停止する可能性があるため、
+  **public のまま運用する**（業務資料は別の private リポジトリへ）
 
 ---
 
