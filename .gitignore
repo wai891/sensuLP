@@ -1,0 +1,27 @@
+# --- 公開リポジトリのため、業務資料の誤コミットを防ぐ ---
+# 詳細は CLAUDE.md「置いてはいけないもの」を参照
+Projects/
+HANDOFF_*.md
+*_実例ログ.md
+*_固定情報*.md
+*_社内*.md
+下書き/
+drafts/
+
+# --- 資格情報 ---
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# --- OS / エディタ / ビルド ---
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
+dist/
+build/
+*.log
+.vscode/
+.idea/
