@@ -1,0 +1,8 @@
+# GitHub Pages（Jekyll）のビルド設定
+# 目的: 社内向けの取扱いルールを公開サイトから配信しない
+#   2026-09-07 実測で /CLAUDE.md と /CLAUDE.html が HTTP 200 だった
+# 注意: exclude は Jekyll の既定リストを「置き換える」。
+#   このリポジトリには既定の除外対象（Gemfile / node_modules / vendor 等）が無いので影響なし
+exclude:
+  - CLAUDE.md
+  - .claude
